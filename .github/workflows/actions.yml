@@ -2,39 +2,50 @@ name: run main.py
 
 on:
   schedule:
-    - cron: '* * * * *' # Runs every 1 minute
+    - cron: '0 * * * *' # Runs every hour
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Checkout the repository content
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: checkout repo content
-        uses: actions/checkout@v2 # checkout the repository content to github runner
-
-      - name: setup python
+      # Setup Python environment
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9' # install the python version needed
-          
-      - name: install python packages
+          python-version: '3.9'
+
+      # Install dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
-      - name: execute py script # run main.py
+
+      # Install ClickHouse client
+      - name: Install ClickHouse client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clickhouse-client
+
+      # Execute Python script
+      - name: Execute script
         env:
           SOME_SECRET: ${{ secrets.SOME_SECRET }}
         run: python main.py
-          
-      - name: commit files
+
+      # Commit logs
+      - name: Commit logs
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add -A
-          git diff-index --quiet HEAD || (git commit -a -m "updated logs" --allow-empty)
-          
-      - name: push changes
+          git add status.log
+          git diff-index --quiet HEAD || (git commit -m "Updated logs")
+
+      # Push changes
+      - name: Push changes
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
