@@ -36,17 +36,13 @@ jobs:
           SOME_SECRET: ${{ secrets.SOME_SECRET }}
         run: python main.py
 
-      # Commit logs
-      - name: Commit logs
+      # Commit and push changes
+      - name: Commit and push changes
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add status.log
-          git diff-index --quiet HEAD || (git commit -m "Updated logs")
-
-      # Push changes
-      - name: Push changes
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add status.log || echo "No logs to add"
+          git diff-index --quiet HEAD || git commit -m "Updated logs"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
