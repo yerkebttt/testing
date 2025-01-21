@@ -45,4 +45,33 @@ venv.bak/
 
 # Logs and temporary files
 status.log
+*.log
 *.csv
+*.tmp
+*.temp
+*.bak
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing and coverage
+coverage/
+coverage.*.json
+.nyc_output/
+*.cover
+*.py,cover
+.cache
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Temporary files created by editors
+*~
