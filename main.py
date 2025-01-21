@@ -22,29 +22,48 @@ try:
     SOME_SECRET = os.environ["SOME_SECRET"]
 except KeyError:
     SOME_SECRET = "Token not available!"
-    logger.info("Token not available!")
+    logger.warning("Token not available!")
 
 if __name__ == "__main__":
     try:
         logger.info(f"Token value: {SOME_SECRET}")
 
-        # Step 1: Load the Excel file
+        # Step 1: Check and load the Excel file
         excel_file_path = "Банк эмитент.xlsx"  # Update with your uploaded Excel file name
         csv_file_path = "Банк эмитент.csv"
 
+        if not os.path.exists(excel_file_path):
+            logger.error(f"Excel file not found: {excel_file_path}")
+            exit(1)
+
         logger.info(f"Reading Excel file from {excel_file_path}...")
-        data = pd.read_excel(excel_file_path)
+        try:
+            data = pd.read_excel(excel_file_path)
+        except Exception as e:
+            logger.error(f"Error reading Excel file: {e}")
+            exit(1)
 
         # Step 2: Convert Excel to CSV
-        logger.info(f"Converting Excel file to CSV at {csv_file_path}...")
-        data.to_csv(csv_file_path, index=False)
+        try:
+            logger.info(f"Converting Excel file to CSV at {csv_file_path}...")
+            data.to_csv(csv_file_path, index=False)
+        except Exception as e:
+            logger.error(f"Error converting Excel to CSV: {e}")
+            exit(1)
 
         # Step 3: Rename columns to match the ClickHouse table structure
-        logger.info("Renaming columns to match ClickHouse table structure...")
-        data.rename(columns={
-            data.columns[0]: 'bank_name',  # Adjust as per your actual column names
-            data.columns[1]: 'simple_name'  # Adjust as per your actual column names
-        }, inplace=True)
+        try:
+            logger.info("Renaming columns to match ClickHouse table structure...")
+            data.rename(columns={
+                data.columns[0]: 'bank_name',  # Adjust as per your actual column names
+                data.columns[1]: 'simple_name'  # Adjust as per your actual column names
+            }, inplace=True)
+        except IndexError:
+            logger.error("Column index out of range. Ensure the Excel file has at least two columns.")
+            exit(1)
+        except Exception as e:
+            logger.error(f"Error renaming columns: {e}")
+            exit(1)
 
         # Step 4: Connect to ClickHouse
         logger.info("Connecting to ClickHouse...")
@@ -57,7 +76,7 @@ if __name__ == "__main__":
             logger.info("Connected to ClickHouse successfully.")
         except Exception as e:
             logger.error(f"Error connecting to ClickHouse: {e}")
-            exit()
+            exit(1)
 
         # Step 5: Truncate the existing table
         try:
@@ -66,7 +85,7 @@ if __name__ == "__main__":
             logger.info("Table truncated successfully.")
         except Exception as e:
             logger.error(f"Error during table truncation: {e}")
-            exit()
+            exit(1)
 
         # Step 6: Insert data into the ClickHouse table
         try:
@@ -88,5 +107,8 @@ if __name__ == "__main__":
             logger.info("Data inserted into the 'banks' table successfully.")
         except Exception as e:
             logger.error(f"Error during data insertion: {e}")
+            exit(1)
+
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
+        exit(1)
