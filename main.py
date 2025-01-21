@@ -59,7 +59,16 @@ if __name__ == "__main__":
             logger.error(f"Error connecting to ClickHouse: {e}")
             exit()
 
-        # Step 5: Insert data into the ClickHouse table
+        # Step 5: Truncate the existing table
+        try:
+            logger.info("Truncating existing data in the ClickHouse table...")
+            client.command("TRUNCATE TABLE onevision.banks")
+            logger.info("Table truncated successfully.")
+        except Exception as e:
+            logger.error(f"Error during table truncation: {e}")
+            exit()
+
+        # Step 6: Insert data into the ClickHouse table
         try:
             logger.info("Preparing data for insertion into ClickHouse...")
 
