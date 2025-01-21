@@ -50,7 +50,7 @@ if __name__ == "__main__":
         logger.info("Connecting to ClickHouse...")
         try:
             client = clickhouse_connect.get_client(
-                host='127.0.0.1',  # Ensure this matches your local ClickHouse setup
+                host='localhost',  # Ensure this matches your local ClickHouse setup
                 username='default',  # Replace with your username
                 password='Zzxcvbnm1!'  # Replace with your password or leave empty if none
             )
