@@ -4,8 +4,7 @@ import logging
 import logging.handlers
 import os
 
-import requests
-
+# Set up logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger_file_handler = logging.handlers.RotatingFileHandler(
@@ -18,59 +17,67 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 logger_file_handler.setFormatter(formatter)
 logger.addHandler(logger_file_handler)
 
+# Load secrets
 try:
     SOME_SECRET = os.environ["SOME_SECRET"]
 except KeyError:
     SOME_SECRET = "Token not available!"
-    #logger.info("Token not available!")
-    #raise
-
+    logger.info("Token not available!")
 
 if __name__ == "__main__":
-    logger.info(f"Token value: {SOME_SECRET}")
-    # Step 1: Load the CSV file
-    csv_file_path = r'C:/Users/ybaty/OneDrive - OneVision/Dictionaries/Банк эмитент.csv'  # Update with your file path
-    data = pd.read_csv(csv_file_path)
-    
-    # Verify the data structure
-    print("Columns in the dataset:", data.columns)
-    print("First 5 rows of the dataset:")
-    print(data.head())
-    
-    # Step 2: Rename columns to match the ClickHouse table structure
-    data.rename(columns={
-        data.columns[0]: 'bank_name',  # Adjust as per your actual column names
-        data.columns[1]: 'simple_name'  # Adjust as per your actual column names
-    }, inplace=True)
-    
-    # Step 3: Connect to ClickHouse
     try:
-        client = clickhouse_connect.get_client(
-            host='localhost',  # Ensure this matches your ClickHouse host
-            username='default',  # Replace with your username
-            password='Zzxcvbnm1!'  # Leave empty if no password is required
-        )
-        print("Connected to ClickHouse successfully.")
+        logger.info(f"Token value: {SOME_SECRET}")
+
+        # Step 1: Load the Excel file
+        excel_file_path = "Банк эмитент.xlsx"  # Update with your uploaded Excel file name
+        csv_file_path = "Банк эмитент.csv"
+
+        logger.info(f"Reading Excel file from {excel_file_path}...")
+        data = pd.read_excel(excel_file_path)
+
+        # Step 2: Convert Excel to CSV
+        logger.info(f"Converting Excel file to CSV at {csv_file_path}...")
+        data.to_csv(csv_file_path, index=False)
+
+        # Step 3: Rename columns to match the ClickHouse table structure
+        logger.info("Renaming columns to match ClickHouse table structure...")
+        data.rename(columns={
+            data.columns[0]: 'bank_name',  # Adjust as per your actual column names
+            data.columns[1]: 'simple_name'  # Adjust as per your actual column names
+        }, inplace=True)
+
+        # Step 4: Connect to ClickHouse
+        logger.info("Connecting to ClickHouse...")
+        try:
+            client = clickhouse_connect.get_client(
+                host='localhost',  # Ensure this matches your local ClickHouse setup
+                username='default',  # Replace with your username
+                password='Zzxcvbnm1!'  # Replace with your password or leave empty if none
+            )
+            logger.info("Connected to ClickHouse successfully.")
+        except Exception as e:
+            logger.error(f"Error connecting to ClickHouse: {e}")
+            exit()
+
+        # Step 5: Insert data into the ClickHouse table
+        try:
+            logger.info("Preparing data for insertion into ClickHouse...")
+
+            # Convert the DataFrame to a list of tuples
+            records = list(data.itertuples(index=False, name=None))
+
+            # Debugging: Print a few records to verify the format
+            logger.debug(f"First 5 records to insert: {records[:5]}")
+
+            # Insert data into the ClickHouse table
+            logger.info("Inserting data into the 'onevision.banks' table...")
+            client.insert(
+                table='onevision.banks',  # Specify the correct database and table name
+                data=records,
+                column_names=['bank_name', 'simple_name']  # Ensure columns match the table schema
+            )
+            logger.info("Data inserted into the 'banks' table successfully.")
+        except Exception as e:
+            logger.error(f"Error during data insertion: {e}")
     except Exception as e:
-        print("Error connecting to ClickHouse:", e)
-        exit()
-    
-    # Step 4: Insert data into the table
-    try:
-        print("Preparing data for insertion...")
-        
-        # Convert the DataFrame to a list of tuples
-        records = list(data.itertuples(index=False, name=None))
-        
-        # Debugging: Print a few records to verify the format
-        print("First 5 records to insert:", records[:5])
-        
-        # Insert data into the ClickHouse table
-        client.insert(
-            table='onevision.banks',  # Specify the correct database and table name
-            data=records,  # Use the list of tuples
-            column_names=['bank_name', 'simple_name']  # Ensure columns match the table schema
-        )
-        print("Data inserted into the 'banks' table successfully.")
-    except Exception as e:
-        print("Error during data insertion:", e)
+        logger.error(f"An unexpected error occurred: {e}")
